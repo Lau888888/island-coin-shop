@@ -1,0 +1,44 @@
+const express = require("express");
+const router = express.Router();
+const Order = require("../models/Order");
+
+function getRate(mode, amount) {
+  if (mode === "buy") {
+    if (amount >= 100) return 3.5;
+    if (amount >= 50) return 3.8;
+    if (amount >= 10) return 3.9;
+    return 4;
+  }
+  return 3;
+}
+
+router.post("/", async (req, res) => {
+  const { mode, gameId, nickname, amount } = req.body;
+  const rate = getRate(mode, amount);
+  const total = Number(amount) * rate;
+  const orderId = "KAI" + Date.now().toString().slice(-6);
+  const order = new Order({
+    orderId,
+    mode,
+    gameId,
+    nickname,
+    amount,
+    rate,
+    total,
+  });
+  await order.save();
+  res.json(order);
+});
+
+router.get("/:orderId", async (req, res) => {
+  const order = await Order.findOne({ orderId: req.params.orderId });
+  res.json(order);
+});
+
+router.get("/", async (req, res) => {
+  const mode = req.query.mode;
+  const orders = await Order.find(mode ? { mode } : {});
+  res.json(orders);
+});
+
+module.exports = router;
